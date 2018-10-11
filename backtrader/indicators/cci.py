@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from . import Indicator, Max, MovAv, MeanDev
+from . import Indicator, Max, MovAv, MeanDev, DivByZero
 
 
 class CommodityChannelIndex(Indicator):
@@ -48,7 +48,9 @@ class CommodityChannelIndex(Indicator):
               ('factor', 0.015),
               ('movav', MovAv.Simple),
               ('upperband', 100.0),
-              ('lowerband', -100.0),)
+              ('lowerband', -100.0),
+              ('safediv', False),
+              ('safezero', 0.0),)
 
     def _plotlabel(self):
         plabels = [self.p.period, self.p.factor]
@@ -64,7 +66,9 @@ class CommodityChannelIndex(Indicator):
 
         dev = tp - tpmean
         meandev = MeanDev(tp, tpmean, period=self.p.period)
-
-        self.lines.cci = dev / (self.p.factor * meandev)
+        if not self.p.safediv:
+          self.lines.cci = dev / (self.p.factor * meandev)
+        else:
+          self.lines.cci = DivByZero(dev, self.p.factor * meandev, zero=self.p.safezero)
 
         super(CommodityChannelIndex, self).__init__()

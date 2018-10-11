@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from . import Indicator, And, If, MovAv, ATR
+from . import Indicator, And, If, MovAv, ATR, DivByZero
 
 
 class UpMove(Indicator):
@@ -76,7 +76,8 @@ class _DirectionalIndicator(Indicator):
     what to calculate) but doesn't assign them to lines. This is left for
     sublcases of this class.
     '''
-    params = (('period', 14), ('movav', MovAv.Smoothed))
+    params = (('period', 14), ('movav', MovAv.Smoothed),
+              ('safediv', False), ('safezero', float('inf')),)
 
     plotlines = dict(plusDI=dict(_name='+DI'), minusDI=dict(_name='-DI'))
 
@@ -96,14 +97,20 @@ class _DirectionalIndicator(Indicator):
             plusDM = If(plus, upmove, 0.0)
             plusDMav = self.p.movav(plusDM, period=self.p.period)
 
-            self.DIplus = 100.0 * plusDMav / atr
+            if not self.p.safediv:
+              self.DIplus = 100.0 * plusDMav / atr
+            else: 
+              self.DIplus = DivByZero(100.0 * plusDMav, atr, zero=self.p.safezero)
 
         if _minus:
             minus = And(downmove > upmove, downmove > 0.0)
             minusDM = If(minus, downmove, 0.0)
             minusDMav = self.p.movav(minusDM, period=self.p.period)
 
-            self.DIminus = 100.0 * minusDMav / atr
+            if not self.p.safediv:
+              self.DIminus = 100.0 * minusDMav / atr
+            else: 
+              self.DIminus = DivByZero(100.0 * minusDMav, atr, zero=self.p.safezero)
 
         super(_DirectionalIndicator, self).__init__()
 
